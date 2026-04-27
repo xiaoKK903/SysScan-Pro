@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SysScan-Pro - 系统级磁盘分析与审计引擎</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <h1>SysScan-Pro</h1>
+        </div>
+        <div class="connection-status" id="connectionStatus">
+          <span class="status-dot disconnected"></span>
+          <span class="status-text">未连接</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Control Panel -->
+      <section class="control-panel">
+        <div class="panel-card">
+          <h2>扫描控制</h2>
+          <div class="control-group">
+            <label for="scanPath">扫描路径</label>
+            <div class="path-input-group">
+              <input 
+                type="text" 
+                id="scanPath" 
+                value="C:\\" 
+                placeholder="输入要扫描的目录路径"
+              >
+              <select id="quickPaths">
+                <option value="">快捷选择...</option>
+                <option value="C:\\">C: 盘</option>
+                <option value="D:\\">D: 盘</option>
+                <option value="C:\\Users">用户目录</option>
+                <option value="C:\\Program Files">程序文件</option>
+                <option value="C:\\Windows">Windows 目录</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="control-group advanced-options" id="advancedOptions">
+            <div class="toggle-header" onclick="toggleAdvanced()">
+              <span>高级选项</span>
+              <span class="toggle-icon" id="toggleIcon">▼</span>
+            </div>
+            <div class="advanced-content" id="advancedContent">
+              <div class="option-row">
+                <label>
+                  <input type="checkbox" id="showHidden">
+                  显示隐藏文件
+                </label>
+                <label>
+                  <input type="checkbox" id="enableThrottle" checked>
+                  启用节流（防止卡顿）
+                </label>
+              </div>
+              <div class="option-row">
+                <div class="option-group">
+                  <label for="maxDepth">最大深度</label>
+                  <input type="number" id="maxDepth" value="0" min="0" placeholder="0=无限">
+                </div>
+                <div class="option-group">
+                  <label for="largeFileThreshold">大文件阈值 (MB)</label>
+                  <input type="number" id="largeFileThreshold" value="100" min="1">
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="action-buttons">
+            <button class="btn btn-primary" id="startBtn" onclick="startScan()">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              开始扫描
+            </button>
+            <button class="btn btn-danger" id="stopBtn" onclick="stopScan()" disabled>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12"></rect>
+              </svg>
+              停止扫描
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Progress Section -->
+      <section class="progress-section" id="progressSection" style="display: none;">
+        <div class="panel-card">
+          <div class="progress-header">
+            <h2>扫描进度</h2>
+            <span class="scan-status" id="scanStatus">正在扫描...</span>
+          </div>
+          
+          <div class="progress-bar-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+              <div class="progress-text" id="progressText">0%</div>
+            </div>
+          </div>
+          
+          <div class="current-path">
+            <span class="path-label">当前路径:</span>
+            <span class="path-value" id="currentPath">等待扫描...</span>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon files">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <div class="stat-value" id="filesCount">0</div>
+                <div class="stat-label">文件数</div>
+              </div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-icon directories">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <div class="stat-value" id="dirsCount">0</div>
+                <div class="stat-label">目录数</div>
+              </div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-icon size">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <div class="stat-value" id="totalSize">0 B</div>
+                <div class="stat-label">总大小</div>
+              </div>
+            </div>
+            
+            <div class="stat-card">
+              <div class="stat-icon speed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </div>
+              <div class="stat-content">
+                <div class="stat-value" id="scanSpeed">0 文件/秒</div>
+                <div class="stat-label">扫描速度</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="time-info">
+            <div class="time-item">
+              <span class="time-label">已用时间:</span>
+              <span class="time-value" id="elapsedTime">0 秒</span>
+            </div>
+            <div class="time-item">
+              <span class="time-label">预计剩余:</span>
+              <span class="time-value" id="remainingTime">计算中...</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section class="results-section" id="resultsSection" style="display: none;">
+        <div class="panel-card">
+          <div class="results-header">
+            <h2>扫描结果</h2>
+            <div class="results-summary" id="resultsSummary"></div>
+          </div>
+          
+          <div class="results-content">
+            <div class="result-tabs">
+              <button class="tab-btn active" onclick="switchTab('overview')">概览</button>
+              <button class="tab-btn" onclick="switchTab('largeFiles')">大文件</button>
+              <button class="tab-btn" onclick="switchTab('emptyDirs')">空文件夹</button>
+              <button class="tab-btn" onclick="switchTab('errors')">错误日志</button>
+            </div>
+            
+            <div class="tab-content" id="tabContent">
+              <div class="tab-panel active" id="overviewPanel">
+                <div class="overview-grid">
+                  <div class="overview-item">
+                    <span class="overview-label">扫描路径</span>
+                    <span class="overview-value" id="resultPath">-</span>
+                  </div>
+                  <div class="overview-item">
+                    <span class="overview-label">总文件数</span>
+                    <span class="overview-value" id="resultFiles">-</span>
+                  </div>
+                  <div class="overview-item">
+                    <span class="overview-label">总目录数</span>
+                    <span class="overview-value" id="resultDirs">-</span>
+                  </div>
+                  <div class="overview-item">
+                    <span class="overview-label">总大小</span>
+                    <span class="overview-value" id="resultSize">-</span>
+                  </div>
+                  <div class="overview-item">
+                    <span class="overview-label">扫描耗时</span>
+                    <span class="overview-value" id="resultDuration">-</span>
+                  </div>
+                  <div class="overview-item">
+                    <span class="overview-label">错误数</span>
+                    <span class="overview-value" id="resultErrors">-</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="tab-panel" id="largeFilesPanel">
+                <div class="file-list" id="largeFilesList">
+                  <p class="empty-message">暂无大文件数据</p>
+                </div>
+              </div>
+              
+              <div class="tab-panel" id="emptyDirsPanel">
+                <div class="file-list" id="emptyDirsList">
+                  <p class="empty-message">暂无空文件夹数据</p>
+                </div>
+              </div>
+              
+              <div class="tab-panel" id="errorsPanel">
+                <div class="error-list" id="errorsList">
+                  <p class="empty-message">暂无错误记录</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Recent Files Log -->
+      <section class="log-section" id="logSection" style="display: none;">
+        <div class="panel-card">
+          <div class="log-header">
+            <h3>实时文件流</h3>
+            <button class="btn btn-small" onclick="clearLog()">清空</button>
+          </div>
+          <div class="log-container" id="logContainer">
+            <p class="log-placeholder">等待扫描开始...</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>SysScan-Pro - 系统级磁盘分析与审计引擎 | 版本 1.0.0</p>
+    </footer>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

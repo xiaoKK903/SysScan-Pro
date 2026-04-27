@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "test": "node --test tests/",
-    "start": "node examples/basic-scan.js",
+    "start": "node src/index.js",
+    "dev": "node src/index.js",
     "scan": "node examples/basic-scan.js",
     "monitor": "node examples/websocket-monitor.js",
     "lint": "eslint src/"
@@ -39,6 +40,7 @@
     "win32"
   ],
   "dependencies": {
+    "express": "^4.18.2",
     "ws": "^8.14.2",
     "chalk": "^4.1.2",
     "commander": "^11.1.0",
