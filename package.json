@@ -1,0 +1,51 @@
+{
+  "name": "sysscan-pro",
+  "version": "1.0.0",
+  "description": "系统级磁盘分析与审计引擎 - 基于 Node.js 的高性能 Windows 磁盘空间深度分析工具",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test tests/",
+    "start": "node examples/basic-scan.js",
+    "scan": "node examples/basic-scan.js",
+    "monitor": "node examples/websocket-monitor.js",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "disk-analysis",
+    "disk-usage",
+    "file-scanner",
+    "windows",
+    "nodejs",
+    "system-utility",
+    "disk-cleanup",
+    "large-files",
+    "empty-folders",
+    "websocket"
+  ],
+  "author": "SysScan-Pro Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/sysscan-pro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/sysscan-pro/issues"
+  },
+  "homepage": "https://github.com/yourusername/sysscan-pro#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "os": [
+    "win32"
+  ],
+  "dependencies": {
+    "ws": "^8.14.2",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0"
+  }
+}

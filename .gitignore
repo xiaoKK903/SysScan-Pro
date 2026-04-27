@@ -1,0 +1,69 @@
+# 依赖目录
+node_modules/
+
+# 日志文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 构建输出
+dist/
+build/
+out/
+
+# 编辑器目录和文件
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 测试覆盖率
+coverage/
+*.lcov
+.nyc_output/
+
+# 临时文件
+*.tmp
+*.temp
+*.log
+.cache/
+
+# 可选的 npm 目录
+.npm
+.eslintcache
+
+# 可选的 yarn 目录
+.pnp/
+.pnp.js
+.yarn-integrity
+
+# 可选的 pnpm 目录
+.pnpm-store/
+
+# 输出文件
+*.jsonl
+*.csv
+*.txt
