@@ -17,7 +17,6 @@ class SysScanPro {
     
     this.app = null;
     this.httpServer = null;
-    this.wss = null;
     this.scanner = null;
     this.progressTracker = null;
     this.wsCommunicator = null;
@@ -35,11 +34,6 @@ class SysScanPro {
     this._setupRoutes();
     
     this.httpServer = http.createServer(this.app);
-    
-    this.wss = new WebSocket.Server({ 
-      server: this.httpServer,
-      clientTracking: true
-    });
     
     this.progressTracker = new ProgressTracker({
       throttleInterval: 100,
@@ -84,7 +78,7 @@ class SysScanPro {
         status: 'ok',
         timestamp: Date.now(),
         isScanning: this.isRunning,
-        activeClients: this.wss ? this.wss.clients.size : 0
+        activeClients: this.wsCommunicator ? this.wsCommunicator.getClientCount() : 0
       });
     });
     
@@ -92,7 +86,7 @@ class SysScanPro {
       res.json({
         isScanning: this.isRunning,
         scanConfig: this.activeScan ? this.activeScan.config : null,
-        activeClients: this.wss ? this.wss.clients.size : 0,
+        activeClients: this.wsCommunicator ? this.wsCommunicator.getClientCount() : 0,
         stats: this.progressTracker ? this.progressTracker.getStats() : null
       });
     });
@@ -136,11 +130,12 @@ class SysScanPro {
   }
 
   _setupWebSocketHandlers() {
-    this.wss.on('connection', (ws, req) => {
-      const clientIP = req.socket.remoteAddress;
+    this.wsCommunicator.on('clientConnected', (data) => {
+      const client = data.client;
+      const clientIP = data.clientIP;
       console.log(`[WebSocket] Client connected: ${clientIP}`);
       
-      ws.send(JSON.stringify({
+      client.send(JSON.stringify({
         type: 'connected',
         timestamp: Date.now(),
         message: 'Welcome to SysScan-Pro',
@@ -148,33 +143,23 @@ class SysScanPro {
       }));
       
       if (this.isRunning && this.progressTracker) {
-        ws.send(JSON.stringify({
+        client.send(JSON.stringify({
           type: 'progress',
           data: this.progressTracker.getStats(),
           timestamp: Date.now()
         }));
       }
+    });
+    
+    this.wsCommunicator.on('message', async (data) => {
+      const ws = data.client;
+      const message = data.data;
       
-      ws.on('message', async (message) => {
-        try {
-          const data = JSON.parse(message);
-          await this._handleClientMessage(ws, data);
-        } catch (error) {
-          console.error('[WebSocket] Message parse error:', error);
-          ws.send(JSON.stringify({
-            type: 'error',
-            message: 'Invalid message format'
-          }));
-        }
-      });
-      
-      ws.on('close', () => {
-        console.log('[WebSocket] Client disconnected');
-      });
-      
-      ws.on('error', (error) => {
-        console.error('[WebSocket] Error:', error);
-      });
+      await this._handleClientMessage(ws, message);
+    });
+    
+    this.wsCommunicator.on('clientDisconnected', (data) => {
+      console.log(`[WebSocket] Client disconnected. Remaining: ${data.totalClients}`);
     });
   }
 
@@ -255,58 +240,28 @@ class SysScanPro {
     
     this.progressTracker.on('start', (data) => {
       console.log('[Progress] Tracking started');
-      this._broadcast({
-        type: 'start',
-        data: {
-          path: this.activeScan ? this.activeScan.path : '',
-          ...data
-        },
-        timestamp: Date.now()
+      this.wsCommunicator.sendStart({
+        path: this.activeScan ? this.activeScan.path : '',
+        ...data
       });
     });
     
     this.progressTracker.on('progress', (progress) => {
-      this._broadcast({
-        type: 'progress',
-        data: progress,
-        timestamp: Date.now()
-      });
+      this.wsCommunicator.sendProgress(progress);
     });
     
     this.progressTracker.on('complete', (result) => {
       console.log('[Progress] Scan completed');
-      this._broadcast({
-        type: 'complete',
-        data: result,
-        timestamp: Date.now()
-      });
+      this.wsCommunicator.sendComplete(result);
     });
     
     this.progressTracker.on('stop', (data) => {
       console.log('[Progress] Tracking stopped');
-      this._broadcast({
+      this.wsCommunicator.broadcast({
         type: 'stopped',
         data: data.stats,
         timestamp: Date.now()
-      });
-    });
-  }
-
-  _broadcast(message) {
-    if (!this.wss) return;
-    
-    const messageStr = typeof message === 'string' 
-      ? message 
-      : JSON.stringify(message);
-    
-    this.wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        try {
-          client.send(messageStr);
-        } catch (error) {
-          console.error('[WebSocket] Broadcast error:', error);
-        }
-      }
+      }, false);
     });
   }
 
@@ -350,13 +305,9 @@ class SysScanPro {
         this.isRunning = false;
         this.activeScan = null;
         
-        this._broadcast({
-          type: 'error',
-          data: {
-            type: 'scan',
-            message: error.message
-          },
-          timestamp: Date.now()
+        this.wsCommunicator.sendError({
+          type: 'scan',
+          message: error.message
         });
       }
     });
@@ -415,10 +366,6 @@ class SysScanPro {
     
     if (this.wsCommunicator) {
       await this.wsCommunicator.stop();
-    }
-    
-    if (this.wss) {
-      this.wss.close();
     }
     
     if (this.httpServer) {
